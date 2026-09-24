@@ -1,78 +1,68 @@
-# React + TypeScript + Vite
+# Altus C2C — Frontend Application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Altus C2C (Course / Channel / Content Platform) platformasining foydalanuvchi interfeysi (Frontend). Ushbu dastur video kurslar, kanallar, pleylistlar va obunalarni boshqarish hamda tomosha qilish imkonini beradi.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Texnologik Stek (Tech Stack)
 
-## React Compiler
+* **Framework & Library:** React 19, Vite 8
+* **Til:** TypeScript (~6.0)
+* **Styling:** Tailwind CSS v4, Lucide React, React Icons
+* **State Management:** 
+  * Client state: Zustand (v5)
+  * Server state & Caching: TanStack Query / React Query (v5)
+* **Form & Validation:** React Hook Form, Zod
+* **Routing:** React Router DOM (v7)
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+---
 
-Note: This will impact Vite dev & build performances.
-You can also try [the experimental native React Compiler support in plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md#rust-react-compiler) by using `compiler: true` in the plugin options instead of using the Babel plugin.
+## 📁 Loyiha Strukturasi
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+src/
+├── api/          # Backend REST API bilan ishlash client'lari
+├── components/   # UI va komponentlar (auth, channel, layout, video, ui)
+├── hooks/        # Custom React hook'lar (masalan, useAuthMutations)
+├── pages/        # Asosiy sahifalar (Home, Subscriptions, History, MyChannel, Settings, Auth)
+├── store/        # Zustand store'lar (useAuthStore, useChannelStore, useUploadStore, ...)
+├── types/        # TypeScript interfeyslari va tiplari
+└── utils/        # Yordamchi funksiyalar
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## ⚙️ O'rnatish va Ishga Tushirish
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+### 1. Kutubxonalarni o'rnatish
+```bash
+npm install
 ```
+
+### 2. Atrof-muhit o'zgaruvchilari (`.env`)
+Loyihaning ildiz qismida `.env` faylini yarating va backend API manzilini ko'rsating:
+```env
+VITE_API_URL=http://localhost:5000/api
+```
+
+### 3. Local Serverni Ishga Tushirish
+```bash
+npm run dev
+```
+Dastur default holatda **http://localhost:5173** manzilida ishlaydi.
+
+### 4. Production Build va Typecheck
+```bash
+npm run build
+```
+
+---
+
+## ✨ Asosiy Imkoniyatlar
+
+- 🎥 **Video & Pleylist:** Video kurslar va darsliklarni tomosha qilish
+- 📺 **Kanal Boshqaruvi:** Kanal yaratish, profil va bannerni tahrirlash
+- 📤 **Video Yuklash:** Video va pleylistlarni yuklash va boshqarish
+- 🔔 **Obunalar:** Kanallarga obuna bo'lish va yangilanishlarni kuzatish
+- 🔐 **Autentifikatsiya:** Telefon raqami va OTP kod orqali tizimga kirish/ro'yxatdan o'tish
+- 🌙 **Dark/Light Mode:** Zamonaviy va moslashuvchan dizayn (Responsive UI)
