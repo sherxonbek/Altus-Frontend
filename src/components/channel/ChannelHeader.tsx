@@ -46,9 +46,9 @@ export const ChannelHeader = ({
       <div className="p-5 sm:p-8">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           {/* Avatar va ma'lumotlar bloki */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5 -mt-16 sm:-mt-20 md:-mt-24">
+          <div className="flex flex-col items-center text-center sm:flex-row sm:items-center sm:text-left gap-5 -mt-16 sm:-mt-20 md:-mt-24 w-full md:w-auto">
             {/* Dumaloq avatar (berilmasa kanal title bosh harflari) */}
-            <div className="relative shrink-0">
+            <div className="relative shrink-0 mx-auto sm:mx-0">
               {channel.avatar ? (
                 <img
                   src={channel.avatar}
@@ -56,19 +56,19 @@ export const ChannelHeader = ({
                   className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full object-cover ring-4 ring-white dark:ring-zinc-900 shadow-2xl bg-zinc-800"
                 />
               ) : (
-                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 text-white font-black text-3xl sm:text-5xl flex items-center justify-center ring-4 ring-white dark:ring-zinc-900 shadow-2xl select-none">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 rounded-full bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 text-white font-black text-3xl sm:text-5xl flex items-center justify-center ring-4 ring-white dark:ring-zinc-900 shadow-2xl select-none mx-auto sm:mx-0">
                   {getInitials(channel.title)}
                 </div>
               )}
             </div>
 
             {/* Title va username */}
-            <div className="pt-2 sm:pt-6 min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white truncate">
+            <div className="pt-2 sm:pt-6 min-w-0 flex-1">
+              <div className="flex items-center justify-center sm:justify-start gap-2">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 dark:text-white truncate">
                   {channel.title}
                 </h1>
-                <CheckCircle2 className="w-6 h-6 text-indigo-600 dark:text-indigo-400 fill-indigo-100 dark:fill-indigo-950 shrink-0" />
+                <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-indigo-600 dark:text-indigo-400 fill-indigo-100 dark:fill-indigo-950 shrink-0" />
               </div>
 
               <p className="text-xs sm:text-sm text-gray-500 dark:text-zinc-400 font-medium mt-1">
@@ -76,7 +76,7 @@ export const ChannelHeader = ({
               </p>
 
               {channel.description && (
-                <p className="text-xs sm:text-sm text-gray-700 dark:text-zinc-300 mt-2.5 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-gray-700 dark:text-zinc-300 mt-2.5 max-w-2xl leading-relaxed mx-auto sm:mx-0">
                   {channel.description}
                 </p>
               )}
@@ -84,7 +84,7 @@ export const ChannelHeader = ({
           </div>
 
           {/* Kanal boshqaruv tugmalari */}
-          <div className="flex items-center gap-2.5 pt-2 sm:pt-4 self-start md:self-auto">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-2 sm:pt-4 w-full md:w-auto">
             <button
               type="button"
               onClick={onEditChannel}

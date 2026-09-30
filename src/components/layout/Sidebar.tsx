@@ -1,20 +1,18 @@
 import {
   Home,
-  Download,
   Bookmark,
   History,
   Tv2,
   Settings,
   HelpCircle,
-  LogOut,
-  ShieldCheck,
   ChevronDown,
   CheckCircle2,
+  Wallet,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSubscriptionStore } from '../../store/useSubscriptionStore'
 
-export type PageType = 'home' | 'subscriptions' | 'saved' | 'history' | 'channel' | 'settings'
+export type PageType = 'home' | 'subscriptions' | 'saved' | 'history' | 'channel' | 'settings' | 'billing' | 'profile'
 
 interface SidebarProps {
   isOpen: boolean
@@ -29,8 +27,9 @@ export const Sidebar = ({
   isOpen,
   activePage = 'home',
   onNavigate,
+  onClose,
 }: SidebarProps) => {
-  const { isAuthenticated, user, logout, openAuthModal } = useAuthStore()
+  const { isAuthenticated, user, openAuthModal } = useAuthStore()
   const { subscriptions: storeSubscriptions, selectedChannelId, setSelectedChannelId } = useSubscriptionStore()
 
   // Ro'yxatdan o'tmagan yoki tizimga kirmagan bo'lsa obunalar mutlaqo bo'sh bo'ladi
@@ -41,23 +40,24 @@ export const Sidebar = ({
   const hasMoreChannels = subscriptions.length > 5
   const remainingCount = subscriptions.length - 5
 
-  // Ism va familiyadan 2 ta bosh harfni qirqib olish
-  const getInitials = (name?: string): string => {
-    if (!name) return 'U'
-    const parts = name.trim().split(/\s+/)
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-  }
-
   return (
-    <aside
-      className={`sticky top-16 h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 transition-all duration-300 ease-in-out shrink-0 z-30 flex flex-col ${
-        isOpen
-          ? 'w-60 lg:w-64 opacity-100'
-          : 'w-0 opacity-0 overflow-hidden border-r-0'
-      }`}
-      aria-label="Asosiy menyu"
-    >
+    <>
+      {/* Mobil uchun qora fon (Overlay) faqat planshetda bo'lishi mumkin */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 hidden md:block lg:hidden transition-opacity"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+      <aside
+        className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-50 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 transition-all duration-300 ease-in-out shrink-0 ${
+          isOpen
+            ? 'translate-x-0 w-64 lg:w-64 opacity-100'
+            : '-translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 overflow-hidden border-r-0'
+        }`}
+        aria-label="Asosiy menyu"
+      >
       {/* Ichki konteyner qisqarganda matn buzilmasligi uchun qat'iy kenglikka ega */}
       <div className="w-60 lg:w-64 h-full flex flex-col overflow-hidden">
         {/* Aylantiriladigan ro'yxat (Scrollable Navigation) */}
@@ -77,19 +77,7 @@ export const Sidebar = ({
               <span className="truncate">Bosh sahifa</span>
             </button>
 
-            {/* Katalog => Yuklanganlar */}
-            <button
-              type="button"
-              onClick={() => onNavigate?.('saved')}
-              className={`w-full flex items-center gap-4 px-3 py-2.5 rounded-xl font-medium transition-colors cursor-pointer text-left ${
-                activePage === 'saved'
-                  ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-zinc-800'
-                  : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
-              }`}
-            >
-              <Download className="w-5 h-5 text-gray-500 dark:text-zinc-400 shrink-0" />
-              <span className="truncate">Yuklanganlar</span>
-            </button>
+
 
             {/* Sevimlilar => Saqlanganlar */}
             <button
@@ -221,6 +209,26 @@ export const Sidebar = ({
               <Tv2 className="w-5 h-5 text-gray-500 dark:text-zinc-400 shrink-0" />
               <span className="truncate">Mening kanalim</span>
             </button>
+
+            {/* Moliya bo'limi */}
+            <button
+              type="button"
+              onClick={() => {
+                if (!isAuthenticated) {
+                  openAuthModal('login')
+                  return
+                }
+                onNavigate?.('billing')
+              }}
+              className={`w-full flex items-center gap-4 px-3 py-2 rounded-xl text-sm font-medium transition-colors cursor-pointer text-left ${
+                activePage === 'billing'
+                  ? 'text-gray-900 dark:text-white bg-gray-100 dark:bg-zinc-800'
+                  : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'
+              }`}
+            >
+              <Wallet className="w-5 h-5 text-gray-500 dark:text-zinc-400 shrink-0" />
+              <span className="truncate">Moliya</span>
+            </button>
           </div>
 
           <div className="my-3 border-t border-gray-200 dark:border-zinc-800" />
@@ -255,58 +263,23 @@ export const Sidebar = ({
             </a>
           </div>
 
-          {/* Pastki qism: Footer ma'lumotlari */}
-          <div className="pt-3 pb-2 px-3 space-y-1 text-[11px] text-gray-400 dark:text-zinc-500">
-            <div className="flex flex-wrap gap-x-2 gap-y-1">
-              <a href="#about" className="hover:underline">Haqida</a>
-              <a href="#terms" className="hover:underline">Qoidalar</a>
-              <a href="#privacy" className="hover:underline">Maxfiylik</a>
-            </div>
-            <p className="font-semibold text-gray-500 dark:text-zinc-400 pt-1">
-              © 2026 Altus
-            </p>
-          </div>
         </div>
 
-        {/* ================= PASTKI PROFIL QISMI (AGAR TIZIMGA KIRGAN BO'LSA) ================= */}
-        {isAuthenticated && user && (
-          <div className="p-3 shrink-0 border-t border-gray-200 dark:border-zinc-800 bg-gray-50/70 dark:bg-zinc-800/40">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {user.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt={user.fullName}
-                    className="w-8 h-8 rounded-full object-cover shrink-0"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
-                    {getInitials(user.fullName)}
-                  </div>
-                )}
-                <div className="truncate">
-                  <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
-                    {user.fullName}
-                  </p>
-                  <p className="text-[10px] text-gray-500 dark:text-zinc-400 truncate flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                    +998 {user.phone}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={logout}
-                className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors cursor-pointer shrink-0"
-                title="Tizimdan chiqish"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
+        {/* ================= PASTKI QISM: FOOTER ================= */}
+        <div className="p-4 shrink-0 border-t border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium text-gray-500 dark:text-zinc-400 mb-2">
+            <a href="#about" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Haqida</a>
+            <span>•</span>
+            <a href="#terms" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Qoidalar</a>
+            <span>•</span>
+            <a href="#privacy" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Maxfiylik</a>
           </div>
-        )}
+          <p className="text-center text-[11px] font-semibold text-gray-400 dark:text-zinc-500">
+            © 2026 ALTUS
+          </p>
+        </div>
       </div>
-    </aside>
+      </aside>
+    </>
   )
 }

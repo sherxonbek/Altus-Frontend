@@ -11,6 +11,7 @@ import {
   Download,
 } from 'lucide-react'
 import type { CoursePlaylist } from '../../types'
+import { useAuthStore } from '../../store/useAuthStore'
 
 interface VideoModalProps {
   video: CoursePlaylist | null
@@ -18,7 +19,17 @@ interface VideoModalProps {
 }
 
 export const VideoModal = ({ video, onClose }: VideoModalProps) => {
+  const { isAuthenticated, openAuthModal } = useAuthStore()
+
   if (!video) return null
+
+  const handleEnroll = () => {
+    if (!isAuthenticated) {
+      openAuthModal('register')
+      return
+    }
+    // Kursga a'zo bo'lish logikasi bu yerda yoziladi
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-xs animate-fadeIn">
@@ -70,6 +81,7 @@ export const VideoModal = ({ video, onClose }: VideoModalProps) => {
               </div>
               <button
                 type="button"
+                onClick={handleEnroll}
                 className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-indigo-500/20 active:scale-98 transition-all cursor-pointer"
               >
                 Kursga a'zo bo'lish

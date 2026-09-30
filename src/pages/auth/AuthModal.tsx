@@ -18,7 +18,7 @@ export const AuthModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
-      <div className="relative w-full max-w-md bg-white dark:bg-zinc-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-md mx-4 bg-white dark:bg-zinc-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-gray-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto">
         {/* Modalni yopish tugmasi */}
         <button
           type="button"

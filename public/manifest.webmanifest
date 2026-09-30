@@ -1,0 +1,24 @@
+{
+  "name": "Altus - Video Kurslar Platformasi",
+  "short_name": "Altus",
+  "description": "Mualliflar va talabalar uchun zamonaviy C2C video kurslar platformasi. Oflayn rejimni qo'llab-quvvatlaydi.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/altus-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/image.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

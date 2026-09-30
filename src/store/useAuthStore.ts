@@ -7,6 +7,8 @@ export interface User {
   phone: string
   role: string
   avatar?: string
+  purchasedCourses?: string[]
+  purchasedLessons?: string[]
 }
 
 interface AuthState {
@@ -29,7 +31,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   accessToken: localStorage.getItem('token') || null,
   user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')!) : null,
-  isAuthenticated: !!localStorage.getItem('token') || !!localStorage.getItem('user'),
+  isAuthenticated: !!localStorage.getItem('token'),
   isLoading: true, // Sahifa yuklanganda sessiyani tekshirish jarayoni
   isAuthModalOpen: false,
   authMode: 'login',
@@ -88,9 +90,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     // Agar storage'da ham, cookie'da ham token bo'lmasa:
     const storedToken = localStorage.getItem('token')
-    const storedUser = localStorage.getItem('user')
 
-    if (!storedToken && !storedUser) {
+    if (!storedToken) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
       set({
         accessToken: null,
         user: null,

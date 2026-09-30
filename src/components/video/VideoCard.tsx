@@ -1,23 +1,39 @@
+import React, { useCallback } from 'react'
 import {
   ListVideo,
   CheckCircle2,
   Star,
+  Bookmark,
 } from 'lucide-react'
 import type { CoursePlaylist } from '../../types'
+import { useSavedStore } from '../../store/useSavedStore'
+import { useToastStore } from '../../store/useToastStore'
 
 interface CourseCardProps {
   video: CoursePlaylist
   onSelect?: (video: CoursePlaylist) => void
 }
 
-export const VideoCard = ({ video, onSelect }: CourseCardProps) => {
+export const VideoCard = React.memo(({ video, onSelect }: CourseCardProps) => {
+  const isSaved = useSavedStore((state) =>
+    state.savedPlaylists.some((item) => String(item.playlist.id) === String(video.id))
+  )
+  const toggleSavePlaylist = useSavedStore((state) => state.toggleSavePlaylist)
+  const showToast = useToastStore((state) => state.showToast)
 
-
+  const handleToggleSave = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      const res = toggleSavePlaylist(video)
+      showToast(res.message, res.isSaved ? 'success' : 'info')
+    },
+    [video, toggleSavePlaylist, showToast]
+  )
 
   return (
     <div
       onClick={() => onSelect?.(video)}
-      className="group flex flex-col bg-white dark:bg-zinc-900 border border-gray-200/90 dark:border-zinc-800 rounded-3xl overflow-hidden hover:shadow-xl hover:border-indigo-500/50 transition-all duration-300 cursor-pointer"
+      className="group relative flex flex-col bg-white dark:bg-zinc-900 border border-gray-200/90 dark:border-zinc-800 rounded-3xl overflow-hidden hover:shadow-xl hover:border-indigo-500/50 transition-all duration-300 cursor-pointer"
     >
       {/* 1. Kurs Muqovasi (Playlist Thumbnail) va Playlist Qoplamasi */}
       <div className="relative aspect-video w-full overflow-hidden bg-gray-100 dark:bg-zinc-800">
@@ -27,6 +43,21 @@ export const VideoCard = ({ video, onSelect }: CourseCardProps) => {
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
+
+        {/* Saqlash (Bookmark) tugmasi - chap yuqori burchakda */}
+        <button
+          type="button"
+          onClick={handleToggleSave}
+          title={isSaved ? "Saqlanganlardan olib tashlash" : "Saqlanganlarga qo'shish"}
+          aria-label={isSaved ? "Saqlanganlardan olib tashlash" : "Saqlanganlarga qo'shish"}
+          className={`absolute top-3 left-3 z-10 w-10 h-10 flex items-center justify-center rounded-xl backdrop-blur-md transition-all duration-200 shadow-md cursor-pointer active:scale-95 ${
+            isSaved
+              ? 'bg-indigo-600 text-white shadow-indigo-600/30'
+              : 'bg-black/60 text-white/90 hover:text-white hover:bg-black/80 sm:opacity-0 sm:group-hover:opacity-100'
+          }`}
+        >
+          <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-current' : ''}`} />
+        </button>
 
         {/* O'ng tarafdagi YouTube/Edu uslubidagi Playlist qoplamasi (Nechta video borligi) */}
         <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-28 bg-gradient-to-l from-black/90 via-black/60 to-transparent flex flex-col items-center justify-center text-white px-2">
@@ -79,4 +110,6 @@ export const VideoCard = ({ video, onSelect }: CourseCardProps) => {
       </div>
     </div>
   )
-}
+})
+
+VideoCard.displayName = 'VideoCard'

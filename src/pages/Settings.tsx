@@ -56,20 +56,18 @@ export const SettingsPage = ({ onNavigate, initialTab = 'profile' }: SettingsPag
     }
   }, [userId, loadUserChannel])
 
-  // User ma'lumotlari o'zgarganda formani sinxronlash
-  useEffect(() => {
+  // User ma'lumotlari yangilanganda formani sinxronlash (React 19 idiomatic pattern)
+  const [prevUser, setPrevUser] = useState(user)
+  if (user !== prevUser) {
+    setPrevUser(user)
     if (user) {
       setFullName(user.fullName || '')
       setAvatar(user.avatar || '')
     }
-  }, [user])
+  }
 
-  // Agar kanal yo'q bo'lsa va tab 'channel' qilib qo'yilgan bo'lsa, avtomatik 'profile'ga o'tish
-  useEffect(() => {
-    if (!hasChannel && activeTab === 'channel') {
-      setActiveTab('profile')
-    }
-  }, [hasChannel, activeTab])
+  // Agar kanal yo'q bo'lsa va tab 'channel' bo'lsa, 'profile' tabini hisoblash
+  const effectiveTab = !hasChannel && activeTab === 'channel' ? 'profile' : activeTab
 
   // Tizimga kirmagan bo'lsa
   if (!isAuthenticated || !user) {
@@ -228,18 +226,18 @@ export const SettingsPage = ({ onNavigate, initialTab = 'profile' }: SettingsPag
       </div>
 
       {/* 2. Bo'limlar (Tabs Switcher) */}
-      <div className="flex items-center gap-2 p-1.5 bg-gray-100 dark:bg-zinc-900 rounded-2xl w-fit border border-gray-200/80 dark:border-zinc-800">
+      <div className="flex items-center gap-2 p-1.5 bg-gray-100 dark:bg-zinc-900 rounded-2xl w-full sm:w-fit overflow-x-auto whitespace-nowrap border border-gray-200/80 dark:border-zinc-800 [&::-webkit-scrollbar]:hidden">
         {/* Profil Sozlamalari (Har doim ko'rinadi) */}
         <button
           type="button"
           onClick={() => setActiveTab('profile')}
           className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer select-none ${
-            activeTab === 'profile'
+            effectiveTab === 'profile'
               ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs'
               : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          <UserIcon className={`w-4 h-4 ${activeTab === 'profile' ? 'text-indigo-600 dark:text-indigo-400' : ''}`} />
+          <UserIcon className={`w-4 h-4 ${effectiveTab === 'profile' ? 'text-indigo-600 dark:text-indigo-400' : ''}`} />
           <span>Profil sozlamalari</span>
         </button>
 
@@ -249,12 +247,12 @@ export const SettingsPage = ({ onNavigate, initialTab = 'profile' }: SettingsPag
             type="button"
             onClick={() => setActiveTab('channel')}
             className={`flex items-center gap-2.5 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer select-none ${
-              activeTab === 'channel'
+              effectiveTab === 'channel'
                 ? 'bg-white dark:bg-zinc-800 text-gray-900 dark:text-white shadow-xs'
                 : 'text-gray-600 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-white'
             }`}
           >
-            <Tv2 className={`w-4 h-4 ${activeTab === 'channel' ? 'text-indigo-600 dark:text-indigo-400' : ''}`} />
+            <Tv2 className={`w-4 h-4 ${effectiveTab === 'channel' ? 'text-indigo-600 dark:text-indigo-400' : ''}`} />
             <span>Kanal sozlamalari</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Kanal faol" />
           </button>
@@ -262,7 +260,7 @@ export const SettingsPage = ({ onNavigate, initialTab = 'profile' }: SettingsPag
       </div>
 
       {/* 3. TAB 1: PROFIL SOZLAMALARI */}
-      {activeTab === 'profile' && (
+      {effectiveTab === 'profile' && (
         <div className="space-y-8 animate-fadeIn">
           {/* Shaxsiy Ma'lumotlar Formasi */}
           <form
@@ -526,7 +524,7 @@ export const SettingsPage = ({ onNavigate, initialTab = 'profile' }: SettingsPag
       )}
 
       {/* 4. TAB 2: KANAL SOZLAMALARI (Faqat kanal ochilgan bo'lsa) */}
-      {activeTab === 'channel' && currentChannel && (
+      {effectiveTab === 'channel' && currentChannel && (
         <div className="space-y-6 animate-fadeIn">
 
           {/* Kanal tahrirlash formasi (avval kanal sahifasida turgan shakl) */}

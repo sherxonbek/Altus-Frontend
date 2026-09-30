@@ -69,7 +69,7 @@ export const Navbar = ({ onToggleSidebar, onOpenLogin, onNavigate }: NavbarProps
             <button
               type="button"
               onClick={onToggleSidebar}
-              className="p-2 rounded-full text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer focus:outline-none"
+              className="hidden md:flex p-2 rounded-full text-gray-700 dark:text-zinc-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer focus:outline-none"
               aria-label="Menyuni ochish"
               title="Menyu"
             >
@@ -170,8 +170,8 @@ export const Navbar = ({ onToggleSidebar, onOpenLogin, onNavigate }: NavbarProps
               )}
             </div>
 
-            {/* ================= PROFIL YOKI KIRISH TUGMASI (KATTA EKRANLAR UCHUN) ================= */}
-            <div className="hidden md:flex items-center">
+            {/* ================= PROFIL YOKI KIRISH TUGMASI ================= */}
+            <div className="flex items-center">
               {isAuthenticated && user ? (
                 // 1. Agar foydalanuvchi tizimga kirgan bo'lsa (Avatar va Dropdown)
                 <div className="relative" ref={profileMenuRef}>

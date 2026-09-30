@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   ArrowLeft,
   Play,
@@ -20,12 +20,15 @@ import {
   Edit3,
   Trash2,
   UploadCloud,
+  Bookmark,
 } from 'lucide-react'
 import type { CoursePlaylist, CourseLesson, CourseComment } from '../../types'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSubscriptionStore } from '../../store/useSubscriptionStore'
 import { useChannelStore } from '../../store/useChannelStore'
 import { useUploadStore } from '../../store/useUploadStore'
+import { useSavedStore } from '../../store/useSavedStore'
+import { useToastStore } from '../../store/useToastStore'
 import { VideoPlayer } from './VideoPlayer'
 import { playlistApi } from '../../api/playlist.api'
 
@@ -50,52 +53,16 @@ export const CourseDetail = ({
   onAddVideo,
 }: CourseDetailProps) => {
   const [course, setCourse] = useState<CoursePlaylist | undefined>(customCourse)
-
-  useEffect(() => {
-    if (customCourse) {
-      setCourse(customCourse)
-      return
-    }
-    if (courseId) {
-      playlistApi.getPlaylist(String(courseId)).then((data) => {
-        if (data) {
-          setCourse(data)
-        }
-      }).catch((e) => {
-        console.error('Failed to load course details:', e)
-      })
-    }
-  }, [courseId, customCourse])
-
   const [activeLesson, setActiveLesson] = useState<CourseLesson | null>(
-    course?.videos?.[0] || null
+    customCourse?.videos?.[0] || null
   )
-
-  useEffect(() => {
-    if (course?.videos && course.videos.length > 0) {
-      setActiveLesson((current) => current || course.videos[0])
-      setUnlockedLessons((prev) => {
-        const next = new Set(prev)
-        course.videos.forEach((v) => {
-          if (v.isFree) next.add(v.id)
-        })
-        return next
-      })
-    }
-  }, [course])
   const [isPlaying, setIsPlaying] = useState(false)
   const [streamUrl, setStreamUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    setIsPlaying(false)
-    setStreamUrl(null)
-  }, [activeLesson?.id])
-
 
   // Sotib olingan / to'langan darslar ro'yxati (bepul darslar avtomatik kiradi)
   const [unlockedLessons, setUnlockedLessons] = useState<Set<string | number>>(() => {
     const initial = new Set<string | number>()
-    course?.videos.forEach((v) => {
+    customCourse?.videos?.forEach((v) => {
       if (v.isFree) initial.add(v.id)
     })
     return initial
@@ -108,12 +75,46 @@ export const CourseDetail = ({
 
   // Like, dislike va obuna holati
   const [likeStatus, setLikeStatus] = useState<'liked' | 'disliked' | null>(null)
-  const [likesCount, setLikesCount] = useState(course?.likesCount || 1240)
+  const [likesCount, setLikesCount] = useState(customCourse?.likesCount || 1240)
 
   const { isSubscribed: checkIsSubscribed, toggleSubscription } = useSubscriptionStore()
-  const { isAuthenticated, openAuthModal, user } = useAuthStore()
+  const { isAuthenticated, openAuthModal, user, checkAuth } = useAuthStore()
   const { currentChannel } = useChannelStore()
   const { tasks } = useUploadStore()
+  const { toggleSaveLesson, isLessonSaved } = useSavedStore()
+  const { showToast } = useToastStore()
+
+  useEffect(() => {
+    if (customCourse) {
+      setCourse(customCourse)
+      return
+    }
+    if (courseId) {
+      playlistApi.getPlaylist(String(courseId)).then((data) => {
+        if (data) {
+          setCourse(data)
+          if (data.videos && data.videos.length > 0) {
+            setActiveLesson((current) => current || data.videos[0])
+            setUnlockedLessons((prev) => {
+              const next = new Set(prev)
+              data.videos.forEach((v) => {
+                if (v.isFree) next.add(v.id)
+              })
+              return next
+            })
+          }
+        }
+      }).catch((e) => {
+        console.error('Failed to load course details:', e)
+      })
+    }
+  }, [courseId, customCourse])
+
+  // To'liq kurs sotib olinganligini foydalanuvchi ma'lumotlaridan aniqlash
+  const isPurchased = Boolean(
+    isFullCoursePurchased ||
+    user?.purchasedCourses?.some((id) => String(id) === String(course?.id || courseId))
+  )
 
   const courseUploads = course
     ? tasks.filter((t) => String(t.targetPlaylistId) === String(course.id))
@@ -122,7 +123,7 @@ export const CourseDetail = ({
   // Foydalanuvchining o'z kanali ekanligini aniqlash (o'z kanaliga o'zi obuna bo'lishni oldini olish):
   const isChannelOwner = Boolean(
     isOwner ||
-    (currentChannel && course?.channel && (
+    (isAuthenticated && currentChannel && course?.channel && (
       (course.channel.id && String(course.channel.id) === String(currentChannel.id)) ||
       (course.channel.name && course.channel.name.toLowerCase() === currentChannel.title.toLowerCase()) ||
       (course.channel.username && currentChannel.username && course.channel.username.toLowerCase() === currentChannel.username.toLowerCase())
@@ -277,29 +278,32 @@ export const CourseDetail = ({
     }
   }
 
-  if (!course) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <p className="text-lg font-semibold text-gray-700 dark:text-zinc-300 mb-4">
-          Kurs topilmadi
-        </p>
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Bosh sahifaga qaytish
-        </button>
-      </div>
-    )
+  const handleToggleSaveLesson = () => {
+    if (!course || !currentLesson) return
+    const res = toggleSaveLesson(currentLesson, course)
+    showToast(res.message, res.isSaved ? 'success' : 'info')
   }
 
-  const currentLesson = activeLesson || course.videos[0]
+  const defaultLesson: CourseLesson = {
+    id: 'placeholder',
+    title: '',
+    videoUrl: '',
+    duration: '00:00',
+    price: "0 so'm",
+    isFree: false,
+  }
+
+  const currentLesson: CourseLesson = activeLesson || course?.videos?.[0] || defaultLesson
   const currentLessonIndex =
-    course.videos.findIndex((v) => String(v.id) === String(currentLesson?.id)) + 1
+    course && currentLesson
+      ? course.videos.findIndex((v) => String(v.id) === String(currentLesson?.id)) + 1
+      : 1
   const isLessonUnlocked =
-    isChannelOwner || isFullCoursePurchased || currentLesson.isFree || unlockedLessons.has(currentLesson.id)
+    isChannelOwner ||
+    isPurchased ||
+    Boolean(currentLesson.isFree) ||
+    unlockedLessons.has(currentLesson.id) ||
+    Boolean(user?.purchasedLessons?.includes(String(currentLesson.id)))
 
   // Tanlangan joriy darslikning izohlari
   const currentLessonComments = commentsByLesson[currentLesson.id] || []
@@ -309,9 +313,11 @@ export const CourseDetail = ({
   const hasDescription = Boolean(rawDescription)
 
   // Matndan barcha heshteglarni avtomatik ajratib olish (#js, #javascript, #frontend, ...)
-  const extractedHashtags = hasDescription
-    ? Array.from(new Set(rawDescription.match(/#[\p{L}\p{N}_]+/gu) || []))
-    : []
+  const extractedHashtags = useMemo(() => {
+    return hasDescription
+      ? Array.from(new Set(rawDescription.match(/#[\p{L}\p{N}_]+/gu) || []))
+      : []
+  }, [hasDescription, rawDescription])
 
   // Matn ichidagi URL va heshteglarni avtomatik havolalarga aylantirish
   const renderFormattedText = (text: string) => {
@@ -351,6 +357,7 @@ export const CourseDetail = ({
     if (!isPlaying || !currentLesson) return
 
     const loadStream = async () => {
+
       try {
         const streamData = await playlistApi.getLessonStream(course?.id || courseId, currentLesson.id)
         if (isCancelled) return
@@ -375,12 +382,13 @@ export const CourseDetail = ({
   // Bitta dars uchun to'lov qilish
   const handlePayForLesson = async () => {
     if (!isAuthenticated) {
-      openAuthModal('login')
+      openAuthModal('register')
       return
     }
     setIsProcessingPayment(true)
     try {
       await playlistApi.purchaseCourseOrLesson(course?.id || courseId, currentLesson.id)
+      await checkAuth()
     } catch {
       // ignore
     }
@@ -391,12 +399,13 @@ export const CourseDetail = ({
   // To'liq kurs uchun to'lov qilish
   const handlePayForFullCourse = async () => {
     if (!isAuthenticated) {
-      openAuthModal('login')
+      openAuthModal('register')
       return
     }
     setIsProcessingPayment(true)
     try {
       await playlistApi.purchaseCourseOrLesson(course?.id || courseId)
+      await checkAuth()
     } catch {
       // ignore
     }
@@ -404,6 +413,23 @@ export const CourseDetail = ({
     setIsProcessingPayment(false)
   }
 
+  if (!course) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <p className="text-lg font-semibold text-gray-700 dark:text-zinc-300 mb-4">
+          Kurs topilmadi
+        </p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-all cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Bosh sahifaga qaytish
+        </button>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 animate-fadeIn pb-12">
@@ -433,10 +459,11 @@ export const CourseDetail = ({
         {/* Chap qism: Video maydoni va Kurs haqida ma'lumotlar */}
         <div className="lg:col-span-2 flex flex-col gap-5">
           {/* VIDEO MAYDONI */}
-          <div className="relative aspect-video w-full rounded-3xl overflow-hidden bg-black shadow-2xl border border-gray-200/80 dark:border-zinc-800 flex items-center justify-center">
+          <div className="relative aspect-video w-full rounded-xl sm:rounded-3xl overflow-hidden bg-black shadow-2xl border border-gray-200/80 dark:border-zinc-800 flex items-center justify-center">
             {isPlaying ? (
               <VideoPlayer
                 url={streamUrl || currentLesson.videoUrl}
+                watermark={user ? `${user.fullName || 'User'} - ${user.id || ''}` : undefined}
                 title={currentLesson.title}
                 poster={currentLesson.thumbnail || course.thumbnail}
                 autoPlay
@@ -561,7 +588,7 @@ export const CourseDetail = ({
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 {/* Like va Dislike segmentli tugmasi (YouTube uslubida) */}
                 <div className="flex items-center bg-gray-100 dark:bg-zinc-800/90 hover:bg-gray-200/70 dark:hover:bg-zinc-800 border border-gray-200/80 dark:border-zinc-700/70 rounded-xl overflow-hidden shadow-xs transition-colors">
                   <button
@@ -592,20 +619,37 @@ export const CourseDetail = ({
                   </button>
                 </div>
 
+                {/* Bookmark tugmasi */}
+                <button
+                  type="button"
+                  onClick={handleToggleSaveLesson}
+                  className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl border transition-all active:scale-95 cursor-pointer ${
+                    isLessonSaved(currentLesson.id)
+                      ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-800/60 text-indigo-600 dark:text-indigo-400'
+                      : 'bg-gray-100 dark:bg-zinc-800/90 hover:bg-gray-200/70 dark:hover:bg-zinc-800 border-gray-200/80 dark:border-zinc-700/70 text-gray-700 dark:text-zinc-200 hover:text-indigo-600 dark:hover:text-indigo-400'
+                  }`}
+                  title={isLessonSaved(currentLesson.id) ? "Saqlanganlardan olib tashlash" : "Saqlanganlarga qo'shish"}
+                >
+                  <Bookmark className={`w-4 h-4 ${isLessonSaved(currentLesson.id) ? 'fill-current' : ''}`} />
+                  <span className="hidden sm:inline">{isLessonSaved(currentLesson.id) ? 'Saqlangan' : 'Saqlash'}</span>
+                </button>
+
                 {/* Obuna Bo'lish tugmasi (Kanal egasiga hech narsa ko'rsatilmaydi) */}
                 {!isChannelOwner && (
                   <button
                     type="button"
                     onClick={handleToggleSubscribe}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer ${isSubscribed
-                      ? 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-gray-200 dark:hover:bg-zinc-700 border border-gray-200 dark:border-zinc-700'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
-                      }`}
+                    className={`group px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer min-w-[140px] ${
+                      isSubscribed
+                        ? 'bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 border border-gray-200 dark:border-zinc-700'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
+                    }`}
                   >
                     {isSubscribed ? (
                       <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                        <span>Obuna bo'lindi</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 group-hover:hidden" />
+                        <span className="group-hover:hidden">Obunadasiz</span>
+                        <span className="hidden group-hover:inline">Bekor qilish</span>
                       </>
                     ) : (
                       <>
@@ -888,7 +932,13 @@ export const CourseDetail = ({
               return (
                 <div
                   key={lesson.id}
-                  onClick={() => setActiveLesson(lesson)}
+                  onClick={() => {
+                    if (!isUnlocked && !isAuthenticated) {
+                      openAuthModal('register')
+                      return
+                    }
+                    setActiveLesson(lesson)
+                  }}
                   className={`p-3 rounded-2xl flex items-start gap-3 transition-all cursor-pointer ${isSelected
                     ? 'bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200/80 dark:border-indigo-800/60'
                     : 'hover:bg-gray-50 dark:hover:bg-zinc-800/60 border border-transparent'

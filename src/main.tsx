@@ -13,6 +13,20 @@ const queryClient = new QueryClient({
   },
 })
 
+// Oflayn rejim va keshlash uchun Service Workerni ro'yxatdan o'tkazish
+if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        console.log('[SW] Service Worker muvaffaqiyatli roʻyxatdan oʻtdi:', reg.scope)
+      })
+      .catch((err) => {
+        console.warn('[SW] Service Worker roʻyxatdan oʻtishda xatolik:', err)
+      })
+  })
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

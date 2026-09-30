@@ -51,13 +51,58 @@ const formatBackendPlaylist = (p: any): CoursePlaylist => {
   }
 }
 
+export interface PaginatedPlaylistsResponse {
+  playlists: CoursePlaylist[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
 export const playlistApi = {
-  getAllPlaylists: async (): Promise<CoursePlaylist[]> => {
+  getAllPlaylists: async (page?: number, limit?: number): Promise<CoursePlaylist[]> => {
     try {
-      const res = await apiClient.get<{ success: boolean; playlists: any[] }>('/playlists')
+      const res = await apiClient.get<{ success: boolean; playlists: any[] }>('/playlists', {
+        params: { ...(page ? { page } : {}), ...(limit ? { limit } : {}) },
+      })
       return (res.data.playlists || []).map(formatBackendPlaylist)
     } catch {
       return []
+    }
+  },
+
+  getPaginatedPlaylists: async (
+    page: number = 1,
+    limit: number = 25
+  ): Promise<PaginatedPlaylistsResponse> => {
+    try {
+      const res = await apiClient.get<{
+        success: boolean
+        playlists: any[]
+        pagination?: {
+          total: number
+          page: number
+          limit: number
+          totalPages: number
+        }
+      }>('/playlists', {
+        params: { page, limit },
+      })
+      const playlists = (res.data.playlists || []).map(formatBackendPlaylist)
+      const pagination = res.data.pagination || {
+        total: playlists.length,
+        page,
+        limit,
+        totalPages: 1,
+      }
+      return { playlists, pagination }
+    } catch {
+      return {
+        playlists: [],
+        pagination: { total: 0, page, limit, totalPages: 0 },
+      }
     }
   },
 

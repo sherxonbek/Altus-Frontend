@@ -19,10 +19,27 @@ export const VideoPlayer = ({
   poster,
   autoPlay = true,
   className = 'w-full h-full',
+  watermark,
+  onEnded,
 }: VideoPlayerProps) => {
   const [iframeLoaded, setIframeLoaded] = useState(false)
   const [isSecurityAlertActive, setIsSecurityAlertActive] = useState(false)
   const isKinescope = isKinescopeVideo(url)
+  
+  // Floating Watermark position
+  const [watermarkPos, setWatermarkPos] = useState({ top: '10%', left: '10%' })
+
+  // Move watermark randomly every few seconds to prevent static capture
+  useEffect(() => {
+    if (!watermark) return
+    const interval = setInterval(() => {
+      setWatermarkPos({
+        top: `${Math.floor(Math.random() * 80) + 10}%`,
+        left: `${Math.floor(Math.random() * 80) + 10}%`
+      })
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [watermark])
 
   // Skrinshot va ekrandan yozib olish tugmalarini aniqlash va bloklash
   const triggerSecurityShield = useCallback(() => {
@@ -86,6 +103,16 @@ export const VideoPlayer = ({
     )
   }
 
+  // Common watermark overlay element
+  const watermarkOverlayElement = watermark ? (
+      <div 
+        className="absolute z-30 pointer-events-none text-white/40 font-bold text-lg sm:text-2xl transition-all duration-1000 ease-in-out whitespace-nowrap"
+        style={{ top: watermarkPos.top, left: watermarkPos.left }}
+      >
+        {watermark}
+      </div>
+  ) : null;
+
   if (isKinescope) {
     const embedUrl = getKinescopeEmbedUrl(url, { autoPlay })
 
@@ -95,6 +122,8 @@ export const VideoPlayer = ({
         onDragStart={(e) => e.preventDefault()}
         className={`relative bg-black overflow-hidden select-none ${className}`}
       >
+        {watermarkOverlayElement}
+        
         {/* Yuklanish indikatori */}
         {!iframeLoaded && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 backdrop-blur-xs gap-3">
@@ -131,7 +160,7 @@ export const VideoPlayer = ({
   }
 
   // Standart HTML5 Video Player (Oddiy lokal yoki masofaviy mp4 fayllar uchun)
-  const directVideoUrl = getFullMediaUrl(url) || 'https://www.w3schools.com/html/mov_bbb.mp4'
+  const directVideoUrl = url.startsWith('blob:') ? url : (getFullMediaUrl(url) || 'https://www.w3schools.com/html/mov_bbb.mp4')
 
   return (
     <div
@@ -139,6 +168,8 @@ export const VideoPlayer = ({
       onDragStart={(e) => e.preventDefault()}
       className={`relative bg-black overflow-hidden select-none ${className}`}
     >
+      {watermarkOverlayElement}
+
       {/* Xavfsizlik qalqoni */}
       {isSecurityAlertActive && (
         <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-black/95 backdrop-blur-md text-center p-4 animate-in fade-in duration-200">
@@ -163,6 +194,7 @@ export const VideoPlayer = ({
         onContextMenu={(e) => e.preventDefault()}
         autoPlay={autoPlay}
         playsInline
+        onEnded={onEnded}
         className="w-full h-full object-contain bg-black"
       />
     </div>

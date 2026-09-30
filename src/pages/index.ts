@@ -6,3 +6,5 @@ export * from './MyChannel'
 export * from './Settings'
 export * from './auth/AuthModal'
 
+export * from './Billing'
+export * from './Profile'
