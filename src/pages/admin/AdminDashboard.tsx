@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import {
-  AdminStats,
-  WithdrawalRequest,
-  TradeAudit,
+  type AdminStats,
+  type WithdrawalRequest,
+  type TradeAudit,
   getAdminStats,
   getWithdrawals,
   approveWithdrawal,

@@ -119,7 +119,7 @@ function App() {
               <ProfilePage onNavigate={(page) => setActivePage(page)} onUploadClick={handleUploadClick} />
             )}
             {activePage === 'admin' && (
-              <AdminDashboardPage onNavigate={(page) => setActivePage(page)} />
+              <AdminDashboardPage onNavigate={(page) => setActivePage(page as PageType)} />
             )}
           </Suspense>
         </main>
