@@ -44,10 +44,18 @@ export const ProfilePage = ({ onNavigate, onUploadClick }: ProfilePageProps) => 
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{user.fullName || 'Foydalanuvchi'}</h2>
           <p className="text-gray-500 dark:text-zinc-400 font-medium">{user.phone}</p>
         </div>
-        <div className="sm:absolute sm:top-6 sm:right-6">
+        <div className="sm:absolute sm:top-6 sm:right-6 flex flex-col sm:flex-row gap-2">
+          {user?.role === 'admin' && (
+            <button 
+              onClick={() => onNavigate('admin')}
+              className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-500/10 dark:hover:bg-indigo-500/20 rounded-xl transition-colors"
+            >
+              🛡️ Admin Panel
+            </button>
+          )}
           <button 
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 rounded-xl transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-bold text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20 rounded-xl transition-colors"
           >
             <LogOut className="w-4 h-4" />
             Chiqish

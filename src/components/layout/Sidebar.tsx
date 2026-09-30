@@ -12,7 +12,7 @@ import {
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSubscriptionStore } from '../../store/useSubscriptionStore'
 
-export type PageType = 'home' | 'subscriptions' | 'saved' | 'history' | 'channel' | 'settings' | 'billing' | 'profile'
+export type PageType = 'home' | 'subscriptions' | 'saved' | 'history' | 'channel' | 'settings' | 'billing' | 'profile' | 'admin'
 
 interface SidebarProps {
   isOpen: boolean

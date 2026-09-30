@@ -218,6 +218,20 @@ export const Navbar = ({ onToggleSidebar, onOpenLogin, onNavigate }: NavbarProps
 
                       {/* Menyu bandlari */}
                       <div className="py-1">
+                        {user?.role === 'admin' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsProfileMenuOpen(false)
+                              onNavigate?.('admin')
+                            }}
+                            className="w-full px-4 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-gray-100 dark:border-zinc-800"
+                          >
+                            <Shield className="w-4 h-4" />
+                            <span className="font-bold">🛡️ Admin Panel</span>
+                          </button>
+                        )}
+
                         <button
                           type="button"
                           onClick={() => setIsProfileMenuOpen(false)}

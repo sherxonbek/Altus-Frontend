@@ -14,6 +14,7 @@ const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ defaul
 const BillingPage = lazy(() => import('./pages/Billing').then((m) => ({ default: m.BillingPage })))
 const AuthModal = lazy(() => import('./pages/auth/AuthModal').then((m) => ({ default: m.AuthModal })))
 const ProfilePage = lazy(() => import('./pages/Profile').then((m) => ({ default: m.ProfilePage })))
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboardPage })))
 import { useChannelStore } from './store/useChannelStore'
 import { useUserVideoStore } from './store/useUserVideoStore'
 import { UploadVideoModal, ChannelForm } from './components/channel'
@@ -116,6 +117,9 @@ function App() {
             )}
             {activePage === 'profile' && (
               <ProfilePage onNavigate={(page) => setActivePage(page)} onUploadClick={handleUploadClick} />
+            )}
+            {activePage === 'admin' && (
+              <AdminDashboardPage onNavigate={(page) => setActivePage(page)} />
             )}
           </Suspense>
         </main>
