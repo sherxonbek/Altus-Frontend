@@ -7,9 +7,10 @@ import {
   X,
   Sparkles,
   Shield,
-  Settings,
+  Coins,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/useAuthStore'
+import { TopUpCoinsModal } from '../common/TopUpCoinsModal'
 import type { PageType } from './Sidebar'
 
 interface NavbarProps {
@@ -19,13 +20,16 @@ interface NavbarProps {
 }
 
 export const Navbar = ({ onToggleSidebar, onOpenLogin, onNavigate }: NavbarProps) => {
-  const { isAuthenticated, user, logout } = useAuthStore()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
+  const logout = useAuthStore((state) => state.logout)
 
   // Qidiruv va dropdown holatlari
   const [searchQuery, setSearchQuery] = useState('')
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false)
 
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const notificationRef = useRef<HTMLDivElement>(null)
@@ -170,6 +174,20 @@ export const Navbar = ({ onToggleSidebar, onOpenLogin, onNavigate }: NavbarProps
               )}
             </div>
 
+            {/* ================= COIN BALANSI (TIZIMGA KIRGANLAR UCHUN) ================= */}
+            {isAuthenticated && user && (
+              <button
+                type="button"
+                onClick={() => setIsTopUpModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 border border-amber-200/60 dark:border-amber-800/50 text-amber-600 dark:text-amber-400 text-xs sm:text-sm font-bold transition-all shadow-xs cursor-pointer group"
+                title="Coin hisobi (Test rejimi)"
+              >
+                <Coins className="w-4 h-4 text-amber-500 transition-transform group-hover:scale-110" />
+                <span>{(user.coins || 0).toLocaleString()}</span>
+                <span className="hidden sm:inline text-xs font-semibold text-amber-700/80 dark:text-amber-300/80">coin</span>
+              </button>
+            )}
+
             {/* ================= PROFIL YOKI KIRISH TUGMASI ================= */}
             <div className="flex items-center">
               {isAuthenticated && user ? (
@@ -211,48 +229,49 @@ export const Navbar = ({ onToggleSidebar, onOpenLogin, onNavigate }: NavbarProps
                             {getInitials(user.fullName)}
                           </div>
                         )}
-                        <p className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
-                          {user.fullName}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                            {user.fullName}
+                          </p>
+                          <div className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                            <Coins className="w-3 h-3" />
+                            <span>{(user.coins || 0).toLocaleString()} coin</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Coin ma'lumoti menyuda */}
+                      <div className="px-4 py-2 border-b border-gray-100 dark:border-zinc-800 bg-amber-50/50 dark:bg-amber-950/20 flex items-center justify-between">
+                        <span className="text-xs text-gray-600 dark:text-zinc-400 font-medium">Tangalar:</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsProfileMenuOpen(false)
+                            setIsTopUpModalOpen(true)
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-500" />
+                          <span>Test rejimi</span>
+                        </button>
                       </div>
 
                       {/* Menyu bandlari */}
-                      <div className="py-1">
-                        {user?.role === 'admin' && (
+                      {user?.role === 'admin' && (
+                        <div className="py-1">
                           <button
                             type="button"
                             onClick={() => {
                               setIsProfileMenuOpen(false)
                               onNavigate?.('admin')
                             }}
-                            className="w-full px-4 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center gap-2.5 transition-colors cursor-pointer border-b border-gray-100 dark:border-zinc-800"
+                            className="w-full px-4 py-2 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 flex items-center gap-2.5 transition-colors cursor-pointer"
                           >
                             <Shield className="w-4 h-4" />
                             <span className="font-bold">🛡️ Admin Panel</span>
                           </button>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => setIsProfileMenuOpen(false)}
-                          className="w-full px-4 py-2 text-xs font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/70 flex items-center gap-2.5 transition-colors cursor-pointer"
-                        >
-                          <Shield className="w-4 h-4 text-gray-400" />
-                          <span>Mening e'lonlarim</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsProfileMenuOpen(false)
-                            onNavigate?.('settings')
-                          }}
-                          className="w-full px-4 py-2 text-xs font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/70 flex items-center gap-2.5 transition-colors cursor-pointer"
-                        >
-                          <Settings className="w-4 h-4 text-gray-400" />
-                          <span>Sozlamalar</span>
-                        </button>
-                      </div>
+                        </div>
+                      )}
 
                       {/* Chiqish (Logout) */}
                       <div className="pt-1 border-t border-gray-100 dark:border-zinc-800">
@@ -313,6 +332,11 @@ export const Navbar = ({ onToggleSidebar, onOpenLogin, onNavigate }: NavbarProps
           </div>
         )}
       </div>
+
+      <TopUpCoinsModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+      />
     </header>
   )
 }

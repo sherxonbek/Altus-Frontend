@@ -236,16 +236,41 @@ export const playlistApi = {
 
   purchaseCourseOrLesson: async (
     playlistId: string | number,
+    lessonId?: string | number,
+    paymentMethod: 'coins' | 'direct' = 'coins'
+  ): Promise<{ success: boolean; message?: string; coins?: number; spentCoins?: number }> => {
+    const res = await apiClient.post<{ success: boolean; message?: string; coins?: number; spentCoins?: number }>(
+      `/playlists/${playlistId}/purchase`,
+      { lessonId, paymentMethod }
+    )
+    return res.data
+  },
+
+  consumeStreamTime: async (payload: {
+    secondsWatched: number
+    quality: '360p' | '720p' | '1080p'
+    playlistId?: string | number
     lessonId?: string | number
-  ): Promise<{ success: boolean; message?: string } | null> => {
-    try {
-      const res = await apiClient.post<{ success: boolean; message?: string }>(
-        `/playlists/${playlistId}/purchase`,
-        { lessonId }
-      )
-      return res.data
-    } catch {
-      return null
-    }
+  }): Promise<{
+    success: boolean
+    outOfCoins: boolean
+    coins: number
+    deducted?: number
+    coinsNeeded?: number
+    quality: string
+    ratePerMin: number
+    message?: string
+  }> => {
+    const res = await apiClient.post<{
+      success: boolean
+      outOfCoins: boolean
+      coins: number
+      deducted?: number
+      coinsNeeded?: number
+      quality: string
+      ratePerMin: number
+      message?: string
+    }>('/playlists/stream-consume', payload)
+    return res.data
   },
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   ArrowLeft,
   Play,
@@ -7,7 +7,6 @@ import {
   Tag,
   ListVideo,
   Lock,
-  CreditCard,
   Sparkles,
   Plus,
   ThumbsUp,
@@ -21,14 +20,17 @@ import {
   Trash2,
   UploadCloud,
   Bookmark,
+  Coins,
 } from 'lucide-react'
 import type { CoursePlaylist, CourseLesson, CourseComment } from '../../types'
 import { useAuthStore } from '../../store/useAuthStore'
 import { useSubscriptionStore } from '../../store/useSubscriptionStore'
 import { useChannelStore } from '../../store/useChannelStore'
 import { useUploadStore } from '../../store/useUploadStore'
-import { useSavedStore } from '../../store/useSavedStore'
+import { useSavedStore, useHistoryStore } from '../../store/useSavedStore'
 import { useToastStore } from '../../store/useToastStore'
+import { useSettingsStore } from '../../store/useSettingsStore'
+import { TopUpCoinsModal } from '../common/TopUpCoinsModal'
 import { VideoPlayer } from './VideoPlayer'
 import { playlistApi } from '../../api/playlist.api'
 
@@ -58,6 +60,7 @@ export const CourseDetail = ({
   )
   const [isPlaying, setIsPlaying] = useState(false)
   const [streamUrl, setStreamUrl] = useState<string | null>(null)
+  const loadedLessonKeyRef = useRef<string>('')
 
   // Sotib olingan / to'langan darslar ro'yxati (bepul darslar avtomatik kiradi)
   const [unlockedLessons, setUnlockedLessons] = useState<Set<string | number>>(() => {
@@ -78,11 +81,15 @@ export const CourseDetail = ({
   const [likesCount, setLikesCount] = useState(customCourse?.likesCount || 1240)
 
   const { isSubscribed: checkIsSubscribed, toggleSubscription } = useSubscriptionStore()
-  const { isAuthenticated, openAuthModal, user, checkAuth } = useAuthStore()
+  const { isAuthenticated, openAuthModal, user, checkAuth, setCoins } = useAuthStore()
+  const { calculateCoins } = useSettingsStore()
   const { currentChannel } = useChannelStore()
   const { tasks } = useUploadStore()
   const { toggleSaveLesson, isLessonSaved } = useSavedStore()
   const { showToast } = useToastStore()
+
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false)
+  const [topUpRequiredCoins, setTopUpRequiredCoins] = useState<number>(0)
 
   useEffect(() => {
     if (customCourse) {
@@ -109,6 +116,28 @@ export const CourseDetail = ({
       })
     }
   }, [courseId, customCourse])
+
+  // Avtomatik ko'rishlar tarixiga qo'shish
+  const addToHistory = useHistoryStore((state) => state.addToHistory)
+  useEffect(() => {
+    if (!course) return
+    addToHistory({
+      id: `hist-${course.id}`,
+      playlistId: course.id,
+      title: activeLesson?.title ? `${course.title} - ${activeLesson.title}` : course.title,
+      thumbnail: activeLesson?.thumbnail || course.thumbnail,
+      channelTitle: course.channel?.name || 'Muallif',
+      channelAvatar: course.channel?.avatar,
+      channelVerified: course.channel?.verified,
+      price: course.price,
+      coins: course.rawPrice ? Math.round(course.rawPrice / 1000) : undefined,
+      progress: 35, // Dastlabki ko'rish progressi
+      duration: activeLesson?.duration || '15:00',
+      totalLessons: course.videoCount || course.videos?.length || 1,
+      category: course.category || 'Dasturlash',
+      rawPlaylist: course,
+    })
+  }, [course, activeLesson, addToHistory])
 
   // To'liq kurs sotib olinganligini foydalanuvchi ma'lumotlaridan aniqlash
   const isPurchased = Boolean(
@@ -294,6 +323,14 @@ export const CourseDetail = ({
   }
 
   const currentLesson: CourseLesson = activeLesson || course?.videos?.[0] || defaultLesson
+  const fullCoursePrice =
+    course?.authorPrice !== undefined && course.authorPrice !== null
+      ? course.authorPrice
+      : (course?.rawPrice || 0)
+  const currentLessonPrice =
+    currentLesson.rawPrice ||
+    (course?.videos?.length ? Math.round(fullCoursePrice / course.videos.length) : 0)
+
   const currentLessonIndex =
     course && currentLesson
       ? course.videos.findIndex((v) => String(v.id) === String(currentLesson?.id)) + 1
@@ -356,11 +393,17 @@ export const CourseDetail = ({
     let isCancelled = false
     if (!isPlaying || !currentLesson) return
 
-    const loadStream = async () => {
+    const lessonKey = `${course?.id || courseId}_${currentLesson.id}`
+    // Agar ushbu dars allaqachon yuklangan bo'lsa, qayta yuklamaslik (videoni reset bo'lishini oldini oladi)
+    if (loadedLessonKeyRef.current === lessonKey && streamUrl) {
+      return
+    }
 
+    const loadStream = async () => {
       try {
         const streamData = await playlistApi.getLessonStream(course?.id || courseId, currentLesson.id)
         if (isCancelled) return
+        loadedLessonKeyRef.current = lessonKey
         if (streamData && streamData.streamUrl) {
           setStreamUrl(streamData.streamUrl)
         } else {
@@ -368,6 +411,7 @@ export const CourseDetail = ({
         }
       } catch {
         if (!isCancelled) {
+          loadedLessonKeyRef.current = lessonKey
           setStreamUrl(currentLesson.videoUrl || null)
         }
       }
@@ -377,7 +421,7 @@ export const CourseDetail = ({
     return () => {
       isCancelled = true
     }
-  }, [isPlaying, currentLesson?.id, course?.id, courseId, user])
+  }, [isPlaying, currentLesson?.id, course?.id, courseId, user?.id])
 
   // Bitta dars uchun to'lov qilish
   const handlePayForLesson = async () => {
@@ -385,15 +429,34 @@ export const CourseDetail = ({
       openAuthModal('register')
       return
     }
+    const requiredCoins = calculateCoins(currentLessonPrice)
+
+    if (requiredCoins > 0 && (user?.coins || 0) < requiredCoins) {
+      setTopUpRequiredCoins(requiredCoins)
+      setIsTopUpModalOpen(true)
+      showToast(`Hisobingizda coin yetarli emas! Ushbu dars uchun ${requiredCoins.toLocaleString()} coin kerak.`, 'warning')
+      return
+    }
+
     setIsProcessingPayment(true)
     try {
-      await playlistApi.purchaseCourseOrLesson(course?.id || courseId, currentLesson.id)
+      const res = await playlistApi.purchaseCourseOrLesson(course?.id || courseId, currentLesson.id, 'coins')
+      if (res && res.coins !== undefined) {
+        setCoins(res.coins)
+      }
       await checkAuth()
-    } catch {
-      // ignore
+      showToast(res?.message || 'Dars muvaffaqiyatli xarid qilindi', 'success')
+      setUnlockedLessons((prev) => new Set([...prev, currentLesson.id]))
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Xarid qilishda xatolik yuz berdi'
+      showToast(msg, 'error')
+      if (msg.includes('yetarli emas')) {
+        setTopUpRequiredCoins(requiredCoins)
+        setIsTopUpModalOpen(true)
+      }
+    } finally {
+      setIsProcessingPayment(false)
     }
-    setUnlockedLessons((prev) => new Set([...prev, currentLesson.id]))
-    setIsProcessingPayment(false)
   }
 
   // To'liq kurs uchun to'lov qilish
@@ -402,15 +465,34 @@ export const CourseDetail = ({
       openAuthModal('register')
       return
     }
+    const requiredCoins = calculateCoins(fullCoursePrice)
+
+    if (requiredCoins > 0 && (user?.coins || 0) < requiredCoins) {
+      setTopUpRequiredCoins(requiredCoins)
+      setIsTopUpModalOpen(true)
+      showToast(`Hisobingizda coin yetarli emas! Toʻliq kurs uchun ${requiredCoins.toLocaleString()} coin kerak.`, 'warning')
+      return
+    }
+
     setIsProcessingPayment(true)
     try {
-      await playlistApi.purchaseCourseOrLesson(course?.id || courseId)
+      const res = await playlistApi.purchaseCourseOrLesson(course?.id || courseId, undefined, 'coins')
+      if (res && res.coins !== undefined) {
+        setCoins(res.coins)
+      }
       await checkAuth()
-    } catch {
-      // ignore
+      showToast(res?.message || 'Toʻliq kurs muvaffaqiyatli xarid qilindi', 'success')
+      setIsFullCoursePurchased(true)
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'Xarid qilishda xatolik yuz berdi'
+      showToast(msg, 'error')
+      if (msg.includes('yetarli emas')) {
+        setTopUpRequiredCoins(requiredCoins)
+        setIsTopUpModalOpen(true)
+      }
+    } finally {
+      setIsProcessingPayment(false)
     }
-    setIsFullCoursePurchased(true)
-    setIsProcessingPayment(false)
   }
 
   if (!course) {
@@ -466,6 +548,9 @@ export const CourseDetail = ({
                 watermark={user ? `${user.fullName || 'User'} - ${user.id || ''}` : undefined}
                 title={currentLesson.title}
                 poster={currentLesson.thumbnail || course.thumbnail}
+                playlistId={course?.id || courseId}
+                lessonId={currentLesson.id}
+                onOutOfCoins={() => setIsTopUpModalOpen(true)}
                 autoPlay
                 className="w-full h-full"
               />
@@ -500,13 +585,15 @@ export const CourseDetail = ({
                         type="button"
                         disabled={isProcessingPayment}
                         onClick={handlePayForLesson}
-                        className="w-full sm:w-auto px-6 py-3 bg-indigo-600 hover:bg-indigo-500 active:scale-98 text-white font-bold text-sm rounded-2xl shadow-xl shadow-indigo-600/40 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full sm:w-auto px-5 py-3 bg-amber-500 hover:bg-amber-600 active:scale-98 text-white font-bold text-xs sm:text-sm rounded-2xl shadow-xl shadow-amber-500/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
                       >
-                        <CreditCard className="w-4 h-4" />
+                        <Coins className="w-4 h-4" />
                         <span>
                           {isProcessingPayment
-                            ? 'To\'lov tekshirilmoqda...'
-                            : `Darsni xarid qilish: ${currentLesson.price}`}
+                            ? 'Toʻlov tekshirilmoqda...'
+                            : calculateCoins(currentLessonPrice) > 0
+                              ? `Dars: ${calculateCoins(currentLessonPrice).toLocaleString()} coin`
+                              : 'Dars: Bepul'}
                         </span>
                       </button>
 
@@ -517,14 +604,46 @@ export const CourseDetail = ({
                         className="w-full sm:w-auto px-4 py-3 bg-white/10 hover:bg-white/20 active:scale-98 text-white font-semibold text-xs sm:text-sm rounded-2xl backdrop-blur-md border border-white/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <Tag className="w-4 h-4 text-amber-400" />
-                        <span>To'liq kurs: {course.price}</span>
+                        <span>
+                          {calculateCoins(fullCoursePrice) > 0
+                            ? `Toʻliq kurs: ${calculateCoins(fullCoursePrice).toLocaleString()} coin`
+                            : 'Toʻliq kurs: Bepul'}
+                        </span>
                       </button>
                     </div>
+
+                    {/* Balans holati va to'ldirish taklifi */}
+                    {isAuthenticated && (
+                      <div className="mt-3 flex items-center gap-2 text-xs text-zinc-300">
+                        <span>Balansingiz:</span>
+                        <span className="font-bold text-amber-400 flex items-center gap-1">
+                          <Coins className="w-3.5 h-3.5" />
+                          {(user?.coins || 0).toLocaleString()} coin
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTopUpRequiredCoins(calculateCoins(currentLessonPrice))
+                            setIsTopUpModalOpen(true)
+                          }}
+                          className="text-amber-400 hover:text-amber-300 underline font-semibold ml-1 cursor-pointer"
+                        >
+                          + Toʻldirish
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   /* 2. PUL TO'LANGAN YOKI BEPUL BO'LSA: Haqiqiy Video Player ko'rinadi */
                   <div
-                    onClick={() => setIsPlaying(true)}
+                    onClick={() => {
+                      if (isAuthenticated && (user?.coins || 0) < 1) {
+                        showToast('Hisobingizda tangalar qolmagan (0 coin). Videoni tomosha qilish uchun tangalar balansini to‘ldiring.', 'warning')
+                        setIsTopUpModalOpen(true)
+                        return
+                      }
+                      setIsPlaying(true)
+                    }}
                     className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 cursor-pointer group"
                   >
                     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-indigo-600/95 text-white flex items-center justify-center pl-1 shadow-2xl group-hover:scale-110 group-hover:bg-indigo-600 transition-all cursor-pointer ring-4 ring-white/30">
@@ -928,6 +1047,10 @@ export const CourseDetail = ({
               const isSelected = currentLesson.id === lesson.id
               const isUnlocked =
                 isChannelOwner || isFullCoursePurchased || lesson.isFree || unlockedLessons.has(lesson.id)
+              const lessonItemPrice =
+                lesson.rawPrice ||
+                (course?.videos?.length ? Math.round(fullCoursePrice / course.videos.length) : 0)
+              const lessonCoins = calculateCoins(lessonItemPrice)
 
               return (
                 <div
@@ -1022,10 +1145,14 @@ export const CourseDetail = ({
                       <span
                         className={`font-bold text-xs shrink-0 ${isUnlocked
                           ? 'text-emerald-600 dark:text-emerald-400 text-[11px]'
-                          : 'text-indigo-600 dark:text-indigo-400'
+                          : 'text-amber-500 font-bold'
                           }`}
                       >
-                        {isUnlocked ? 'Ruxsat bor' : lesson.price}
+                        {isUnlocked
+                          ? 'Ruxsat bor'
+                          : lessonCoins > 0
+                          ? `${lessonCoins.toLocaleString()} coin`
+                          : 'Bepul'}
                       </span>
                     </div>
                   </div>
@@ -1035,6 +1162,12 @@ export const CourseDetail = ({
           </div>
         </div>
       </div>
-    </div >
+
+      <TopUpCoinsModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+        requiredCoins={topUpRequiredCoins}
+      />
+    </div>
   )
 }

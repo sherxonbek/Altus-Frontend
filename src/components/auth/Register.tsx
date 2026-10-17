@@ -3,6 +3,7 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Input } from '../ui/Input'
 import { OtpInput } from './OtpInput'
+import { Gift } from 'lucide-react'
 import {
   phoneStepSchema,
   otpStepSchema,
@@ -175,6 +176,23 @@ export const Register = () => {
                   : 'w-4 bg-gray-200 dark:bg-zinc-800'
               }`}
             />
+          </div>
+        )}
+
+        {/* 100 Coin Bonus e'loni */}
+        {currentStep !== 'SUCCESS' && (
+          <div className="mt-4 p-2.5 rounded-2xl bg-amber-500/10 dark:bg-amber-500/10 border border-amber-500/25 flex items-center gap-2.5 text-left">
+            <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <Gift className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                100 Coin Test Bonusi 🎁
+              </p>
+              <p className="text-[11px] text-amber-700 dark:text-amber-300/80">
+                Roʻyxatdan oʻtganingizda hisobingizga bepul 100 coin beriladi!
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -525,6 +543,25 @@ export const Register = () => {
           <p className="text-sm text-gray-600 dark:text-zinc-300">
             Siz muvaffaqiyatli ro'yxatdan o'tdingiz.
           </p>
+
+          <div className="p-3.5 bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-between">
+            <div className="flex items-center gap-2.5 text-left">
+              <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                🪙
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-900 dark:text-white">
+                  Test Bonusi Taqdim Etildi!
+                </p>
+                <p className="text-[11px] text-gray-500 dark:text-zinc-400">
+                  Hisobingizga 100 coin qoʻshildi
+                </p>
+              </div>
+            </div>
+            <span className="text-sm font-black text-amber-500">
+              +100 coin
+            </span>
+          </div>
 
           <div className="p-4 bg-gray-50 dark:bg-zinc-800/70 rounded-xl text-left text-xs space-y-1 text-gray-600 dark:text-zinc-300">
             <p>

@@ -8,7 +8,7 @@ import {
 } from 'lucide-react'
 import type { CoursePlaylist } from '../../types'
 import type { UserChannel } from '../../store/useChannelStore'
-import { useUserVideoStore } from '../../store/useUserVideoStore'
+import { useUploadStore } from '../../store/useUploadStore'
 
 interface UploadVideoModalProps {
   isOpen: boolean
@@ -25,12 +25,11 @@ export const UploadVideoModal = ({
   playlists,
   initialPlaylistId = 'new',
 }: UploadVideoModalProps) => {
-  const { createPlaylist, addVideoToPlaylist } = useUserVideoStore()
-
   const [targetPlaylistId, setTargetPlaylistId] = useState<string>(initialPlaylistId)
   const [newPlaylistTitle, setNewPlaylistTitle] = useState('')
   const [newPlaylistPrice, setNewPlaylistPrice] = useState('')
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadTitle, setUploadTitle] = useState('')
   const [uploadDescription, setUploadDescription] = useState('')
   const [uploadVideoUrl, setUploadVideoUrl] = useState('')
@@ -55,6 +54,7 @@ export const UploadVideoModal = ({
     const file = e.target.files?.[0]
     if (!file) return
 
+    setSelectedFile(file)
     const url = URL.createObjectURL(file)
     setUploadVideoUrl(url)
     setUploadFileSize(file.size)
@@ -70,6 +70,13 @@ export const UploadVideoModal = ({
       v.src = url
       v.muted = true
       v.playsInline = true
+      v.onloadedmetadata = () => {
+        const sec = Math.floor(v.duration || 0)
+        const m = Math.floor(sec / 60)
+        const s = sec % 60
+        const formatted = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+        setUploadDuration(formatted)
+      }
       v.onloadeddata = () => {
         v.currentTime = 1
       }
@@ -89,7 +96,7 @@ export const UploadVideoModal = ({
   }
 
   // Video yuklash funksiyasi
-  const handleUploadVideo = async (e: React.FormEvent) => {
+  const handleUploadVideo = (e: React.FormEvent) => {
     e.preventDefault()
     setUploadError('')
     setUploadSuccess('')
@@ -104,7 +111,7 @@ export const UploadVideoModal = ({
       return
     }
 
-    if (!uploadVideoUrl.trim()) {
+    if (!selectedFile && !uploadVideoUrl.trim()) {
       setUploadError('Video yuklash majburiy (fayl tanlang yoki havola kiriting).')
       return
     }
@@ -114,44 +121,32 @@ export const UploadVideoModal = ({
       return
     }
 
-    let finalPlaylistId: string | number = targetPlaylistId
-
-    if (targetPlaylistId === 'new') {
-      const parsedPrice = newPlaylistPrice.trim()
-        ? parseInt(newPlaylistPrice.replace(/\D/g, ''), 10) || 0
-        : 0
-
-      const created = await createPlaylist(channel, {
-        title: newPlaylistTitle.trim(),
-        totalPrice: parsedPrice,
-      })
-      if (created) {
-        finalPlaylistId = created.id
-      }
-    }
-
-    await addVideoToPlaylist(channel.id, finalPlaylistId, {
+    useUploadStore.getState().startUpload({
+      file: selectedFile,
+      videoUrl: !selectedFile ? uploadVideoUrl.trim() : undefined,
       title: uploadTitle.trim(),
       description: uploadDescription.trim() || undefined,
-      videoUrl: uploadVideoUrl.trim(),
+      channel,
+      targetPlaylistId,
+      newPlaylistTitle: targetPlaylistId === 'new' ? newPlaylistTitle : undefined,
+      newPlaylistPrice: targetPlaylistId === 'new' ? newPlaylistPrice : undefined,
       thumbnail: uploadThumbnail || undefined,
-      duration: uploadDuration || undefined,
-      fileSize: uploadFileSize || undefined,
+      duration: uploadDuration || '00:00',
+      fileSize: uploadFileSize,
     })
 
-    setUploadSuccess('Video muvaffaqiyatli yuklandi!')
-    setTimeout(() => {
-      setUploadTitle('')
-      setUploadDescription('')
-      setUploadVideoUrl('')
-      setUploadThumbnail('')
-      setUploadDuration('')
-      setUploadFileSize(undefined)
-      setNewPlaylistTitle('')
-      setNewPlaylistPrice('')
-      setUploadSuccess('')
-      onClose()
-    }, 500)
+    setSelectedFile(null)
+    setUploadTitle('')
+    setUploadDescription('')
+    setUploadVideoUrl('')
+    setUploadThumbnail('')
+    setUploadDuration('')
+    setUploadFileSize(undefined)
+    setNewPlaylistTitle('')
+    setNewPlaylistPrice('')
+    setUploadError('')
+    setUploadSuccess('')
+    onClose()
   }
 
   return (
@@ -294,8 +289,11 @@ export const UploadVideoModal = ({
                 <button
                   type="button"
                   onClick={() => {
+                    setSelectedFile(null)
                     setUploadVideoUrl('')
                     setUploadThumbnail('')
+                    setUploadDuration('')
+                    setUploadFileSize(undefined)
                   }}
                   className="text-xs text-red-500 hover:text-red-600 font-medium cursor-pointer"
                 >

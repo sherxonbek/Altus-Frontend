@@ -13,18 +13,34 @@ const queryClient = new QueryClient({
   },
 })
 
-// Oflayn rejim va keshlash uchun Service Workerni ro'yxatdan o'tkazish
+// Oflayn rejim va keshlash uchun Service Workerni faqat production rejimida ro'yxatdan o'tkazish
 if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((reg) => {
-        console.log('[SW] Service Worker muvaffaqiyatli roʻyxatdan oʻtdi:', reg.scope)
+  if (import.meta.env.PROD) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((reg) => {
+          console.log('[SW] Service Worker muvaffaqiyatli roʻyxatdan oʻtdi:', reg.scope)
+        })
+        .catch((err) => {
+          console.warn('[SW] Service Worker roʻyxatdan oʻtishda xatolik:', err)
+        })
+    })
+  } else {
+    // Development rejimida eski keshlar va service workerni avtomatik tozalash (HMR va React nusxalarini buzmaslik uchun)
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const reg of registrations) {
+        reg.unregister()
+      }
+    })
+    if ('caches' in window) {
+      caches.keys().then((names) => {
+        for (const name of names) {
+          caches.delete(name)
+        }
       })
-      .catch((err) => {
-        console.warn('[SW] Service Worker roʻyxatdan oʻtishda xatolik:', err)
-      })
-  })
+    }
+  }
 }
 
 createRoot(document.getElementById('root')!).render(

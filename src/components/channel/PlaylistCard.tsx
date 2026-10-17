@@ -17,9 +17,13 @@ export const PlaylistCard = ({
   onEdit,
   onDelete,
 }: PlaylistCardProps) => {
+  const authorTotal =
+    playlist.authorPrice !== undefined && playlist.authorPrice !== null
+      ? playlist.authorPrice
+      : (playlist.rawPrice || 0)
   const perVideoPrice =
-    playlist.videos.length > 0 && playlist.rawPrice
-      ? Math.round(playlist.rawPrice / playlist.videos.length)
+    playlist.videos.length > 0 && authorTotal > 0
+      ? Math.round(authorTotal / playlist.videos.length)
       : 0
 
   return (
@@ -47,7 +51,7 @@ export const PlaylistCard = ({
 
         {/* Narxi burchak nishoni */}
         <div className="absolute top-3 left-3 px-2.5 py-1 rounded-xl bg-black/75 backdrop-blur-md text-white text-xs font-bold shadow-md">
-          {playlist.price}
+          {formatPrice(authorTotal)}
         </div>
       </div>
 

@@ -15,30 +15,34 @@ const BillingPage = lazy(() => import('./pages/Billing').then((m) => ({ default:
 const AuthModal = lazy(() => import('./pages/auth/AuthModal').then((m) => ({ default: m.AuthModal })))
 const ProfilePage = lazy(() => import('./pages/Profile').then((m) => ({ default: m.ProfilePage })))
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboardPage })))
+const UploadVideoModal = lazy(() => import('./components/channel').then((m) => ({ default: m.UploadVideoModal })))
+const ChannelForm = lazy(() => import('./components/channel').then((m) => ({ default: m.ChannelForm })))
+
 import { useChannelStore } from './store/useChannelStore'
 import { useUserVideoStore } from './store/useUserVideoStore'
-import { UploadVideoModal, ChannelForm } from './components/channel'
+import { useSettingsStore } from './store/useSettingsStore'
+
 function App() {
   const [activePage, setActivePage] = useState<PageType>('home')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
-  const {
-    isAuthenticated,
-    isLoading,
-    checkAuth,
-    isAuthModalOpen,
-    authMode,
-    openAuthModal,
-    closeAuthModal,
-    setAuthMode,
-  } = useAuthStore()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const isLoading = useAuthStore((s) => s.isLoading)
+  const checkAuth = useAuthStore((s) => s.checkAuth)
+  const isAuthModalOpen = useAuthStore((s) => s.isAuthModalOpen)
+  const authMode = useAuthStore((s) => s.authMode)
+  const openAuthModal = useAuthStore((s) => s.openAuthModal)
+  const closeAuthModal = useAuthStore((s) => s.closeAuthModal)
+  const setAuthMode = useAuthStore((s) => s.setAuthMode)
+
+  const fetchSettings = useSettingsStore((s) => s.fetchSettings)
+  const currentChannel = useChannelStore((s) => s.currentChannel)
+  const playlists = useUserVideoStore((s) => s.playlists)
 
   useEffect(() => {
     checkAuth()
-  }, [checkAuth])
-
-  const { currentChannel } = useChannelStore()
-  const { playlists } = useUserVideoStore()
+    fetchSettings()
+  }, [checkAuth, fetchSettings])
 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [isChannelModalOpen, setIsChannelModalOpen] = useState(false)
@@ -71,67 +75,81 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 flex flex-col overflow-x-hidden">
-      {/* 1. Yuqori Navbar */}
-      <Navbar
-        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
-        onOpenLogin={() => handleOpenAuth('login')}
-        onNavigate={(page) => setActivePage(page)}
-      />
+    <div className="h-screen h-[100dvh] bg-white dark:bg-zinc-950 text-gray-900 dark:text-gray-100 flex flex-col overflow-hidden">
+      {activePage === 'admin' ? (
+        <Suspense
+          fallback={
+            <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 flex flex-col justify-center items-center p-4">
+              <div className="w-10 h-10 border-4 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin mb-3" />
+              <p className="text-sm font-medium text-gray-500 dark:text-zinc-400 animate-pulse">
+                Admin paneli yuklanmoqda...
+              </p>
+            </div>
+          }
+        >
+          <AdminDashboardPage onNavigate={(page) => setActivePage(page as PageType)} />
+        </Suspense>
+      ) : (
+        <>
+          {/* 1. Yuqori Klient Navbar */}
+          <Navbar
+            onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+            onOpenLogin={() => handleOpenAuth('login')}
+            onNavigate={(page) => setActivePage(page)}
+          />
 
-      {/* 2. Asosiy qism: Sidebar va Sahifalar (pages) yonma-yon */}
-      <div className="flex-1 flex w-full">
-        {/* Chap tarafdagi Docked Sidebar */}
-        <Sidebar
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          activePage={activePage}
-          onNavigate={(page) => setActivePage(page)}
-          onOpenLogin={() => handleOpenAuth('login')}
-          onOpenRegister={() => handleOpenAuth('register')}
-        />
+          {/* 2. Asosiy qism: Klient Sidebar va Sahifalar yonma-yon */}
+          <div className="flex-1 flex w-full min-h-0 overflow-hidden">
+            <Sidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+              activePage={activePage}
+              onNavigate={(page) => setActivePage(page)}
+              onOpenLogin={() => handleOpenAuth('login')}
+              onOpenRegister={() => handleOpenAuth('register')}
+            />
 
-        {/* O'ng tarafdagi Asosiy Sahifa (Pages) */}
-        <main className="flex-1 flex flex-col px-3 sm:px-6 py-4 sm:py-6 lg:px-8 min-w-0 overflow-y-auto pb-20 md:pb-8">
-          <Suspense
-            fallback={
-              <div className="flex-1 flex justify-center items-center py-20">
-                <div className="w-8 h-8 border-3 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
-              </div>
-            }
-          >
-            {activePage === 'home' && <HomePage />}
-            {activePage === 'history' && <HistoryPage />}
-            {activePage === 'subscriptions' && (
-              <SubscriptionsPage onNavigate={(page) => setActivePage(page)} />
-            )}
-            {activePage === 'saved' && <SavedPage />}
-            {activePage === 'channel' && (
-              <MyChannelPage onNavigate={(page) => setActivePage(page)} />
-            )}
-            {activePage === 'billing' && (
-              <BillingPage onNavigate={(page) => setActivePage(page)} />
-            )}
-            {activePage === 'settings' && (
-              <SettingsPage onNavigate={(page) => setActivePage(page)} />
-            )}
-            {activePage === 'profile' && (
-              <ProfilePage onNavigate={(page) => setActivePage(page)} onUploadClick={handleUploadClick} />
-            )}
-            {activePage === 'admin' && (
-              <AdminDashboardPage onNavigate={(page) => setActivePage(page as PageType)} />
-            )}
-          </Suspense>
-        </main>
-      </div>
+            <main className="flex-1 flex flex-col px-3 sm:px-6 py-4 sm:py-6 lg:px-8 min-w-0 overflow-y-auto pb-20 md:pb-8">
+              <Suspense
+                fallback={
+                  <div className="flex-1 flex justify-center items-center py-20">
+                    <div className="w-8 h-8 border-3 border-indigo-600/30 border-t-indigo-600 rounded-full animate-spin" />
+                  </div>
+                }
+              >
+                {activePage === 'home' && <HomePage />}
+                {activePage === 'history' && (
+                  <HistoryPage onNavigate={(page) => setActivePage(page)} />
+                )}
+                {activePage === 'subscriptions' && (
+                  <SubscriptionsPage onNavigate={(page) => setActivePage(page)} />
+                )}
+                {activePage === 'saved' && <SavedPage />}
+                {activePage === 'channel' && (
+                  <MyChannelPage onNavigate={(page) => setActivePage(page)} />
+                )}
+                {activePage === 'billing' && (
+                  <BillingPage onNavigate={(page) => setActivePage(page)} />
+                )}
+                {activePage === 'settings' && (
+                  <SettingsPage onNavigate={(page) => setActivePage(page)} />
+                )}
+                {activePage === 'profile' && (
+                  <ProfilePage onNavigate={(page) => setActivePage(page)} onUploadClick={handleUploadClick} />
+                )}
+              </Suspense>
+            </main>
+          </div>
 
-      {/* Mobil uchun Bottom Navigation */}
-      <BottomNav 
-        activePage={activePage} 
-        onNavigate={(page) => setActivePage(page)} 
-        onOpenLogin={() => handleOpenAuth('login')} 
-        onUploadClick={handleUploadClick}
-      />
+          {/* Mobil uchun Klient Bottom Navigation */}
+          <BottomNav 
+            activePage={activePage} 
+            onNavigate={(page) => setActivePage(page)} 
+            onOpenLogin={() => handleOpenAuth('login')} 
+            onUploadClick={handleUploadClick}
+          />
+        </>
+      )}
 
       {/* 3. Tizimga kirish / Ro'yxatdan o'tish Modal oynasi (pages/auth) */}
       <Suspense fallback={null}>
@@ -146,33 +164,35 @@ function App() {
       </Suspense>
 
       {/* Modallar */}
-      {isUploadModalOpen && currentChannel && (
-        <UploadVideoModal
-          isOpen={isUploadModalOpen}
-          onClose={() => setIsUploadModalOpen(false)}
-          channel={currentChannel}
-          playlists={playlists}
-        />
-      )}
+      <Suspense fallback={null}>
+        {isUploadModalOpen && currentChannel && (
+          <UploadVideoModal
+            isOpen={isUploadModalOpen}
+            onClose={() => setIsUploadModalOpen(false)}
+            channel={currentChannel}
+            playlists={playlists}
+          />
+        )}
 
-      {isChannelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsChannelModalOpen(false)}>
-          <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold">Kanal Yaratish</h3>
-              <button onClick={() => setIsChannelModalOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white font-bold">Ortga</button>
+        {isChannelModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsChannelModalOpen(false)}>
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Kanal Yaratish</h3>
+                <button onClick={() => setIsChannelModalOpen(false)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white font-bold">Ortga</button>
+              </div>
+              <ChannelForm 
+                isEditing={false} 
+                onCancel={() => setIsChannelModalOpen(false)} 
+                onSuccess={() => {
+                  setIsChannelModalOpen(false)
+                  setIsUploadModalOpen(true)
+                }} 
+              />
             </div>
-            <ChannelForm 
-              isEditing={false} 
-              onCancel={() => setIsChannelModalOpen(false)} 
-              onSuccess={() => {
-                setIsChannelModalOpen(false)
-                setIsUploadModalOpen(true)
-              }} 
-            />
           </div>
-        </div>
-      )}
+        )}
+      </Suspense>
 
       {/* 4. Global Orqa Fonda Video Yuklash Vidjeti */}
       <GlobalUploadProgress onNavigateToChannel={() => setActivePage('channel')} />

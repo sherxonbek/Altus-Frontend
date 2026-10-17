@@ -56,3 +56,21 @@ export interface CoursePlaylist {
 
 // Moslik uchun type
 export type Video = CoursePlaylist
+
+export interface HistoryItem {
+  id: string | number
+  playlistId: string | number
+  title: string
+  thumbnail: string
+  channelTitle: string
+  channelAvatar?: string
+  channelVerified?: boolean
+  price?: string
+  coins?: number
+  watchedAt: string
+  progress: number
+  duration?: string
+  totalLessons?: number
+  category?: string
+  rawPlaylist?: CoursePlaylist
+}

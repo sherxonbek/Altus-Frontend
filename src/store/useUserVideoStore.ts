@@ -53,30 +53,31 @@ export const calculateDynamicVideoCost = (durationMinutes: number, sizeMB: numbe
   return Math.max(1500, Math.ceil(rawTotal / 100) * 100)
 }
 
-// Playlist umumiy narxini va har bir videoning dinamik server to'lovini hisoblash
+// Playlist umumiy narxini va har bir videoning sof muallif narxini hisoblash
 export const recalculatePlaylistPrices = (playlist: CoursePlaylist): CoursePlaylist => {
   const count = playlist.videos.length
+  const authorTotal =
+    playlist.authorPrice !== undefined && playlist.authorPrice !== null
+      ? playlist.authorPrice
+      : (playlist.rawPrice || 0)
+
   if (count === 0) {
-    return { ...playlist, price: "0 so'm" }
+    return {
+      ...playlist,
+      authorPrice: authorTotal,
+      rawPrice: authorTotal,
+      price: formatPrice(authorTotal),
+    }
   }
-  const authorTotal = playlist.authorPrice !== undefined ? playlist.authorPrice : (playlist.rawPrice || 0)
   const authorPerVideo = count > 0 && authorTotal > 0 ? Math.round(authorTotal / count) : 0
 
-  let totalCalculated = 0
-
   const updatedVideos: CourseLesson[] = playlist.videos.map((v: CourseLesson) => {
-    const mins = parseDurationToMinutes(v.duration)
-    const mb = parseFileSizeToMB(v.fileSize, mins)
-    const serverCost = calculateDynamicVideoCost(mins, mb)
-    // Muallif narxi ustiga server xarajati va marjasi qo'shiladi (masalan: 10 000 + 1 500 = 11 500)
-    const finalLessonPrice = authorPerVideo + serverCost
-    totalCalculated += finalLessonPrice
-
     return {
       ...v,
-      rawPrice: finalLessonPrice,
-      price: formatPrice(finalLessonPrice),
-      isFree: false,
+      authorPrice: authorPerVideo,
+      rawPrice: authorPerVideo,
+      price: formatPrice(authorPerVideo),
+      isFree: authorPerVideo === 0,
     }
   })
 
@@ -84,8 +85,8 @@ export const recalculatePlaylistPrices = (playlist: CoursePlaylist): CoursePlayl
     ...playlist,
     authorPrice: authorTotal,
     videos: updatedVideos,
-    rawPrice: totalCalculated,
-    price: formatPrice(totalCalculated),
+    rawPrice: authorTotal,
+    price: formatPrice(authorTotal),
   }
 }
 

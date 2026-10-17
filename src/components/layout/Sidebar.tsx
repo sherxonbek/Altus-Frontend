@@ -51,7 +51,7 @@ export const Sidebar = ({
         />
       )}
       <aside
-        className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-50 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 transition-all duration-300 ease-in-out shrink-0 ${
+        className={`hidden md:flex flex-col fixed inset-y-0 left-0 z-50 lg:static lg:z-0 lg:h-full bg-white dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 transition-all duration-300 ease-in-out shrink-0 ${
           isOpen
             ? 'translate-x-0 w-64 lg:w-64 opacity-100'
             : '-translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 overflow-hidden border-r-0'
@@ -59,7 +59,7 @@ export const Sidebar = ({
         aria-label="Asosiy menyu"
       >
       {/* Ichki konteyner qisqarganda matn buzilmasligi uchun qat'iy kenglikka ega */}
-      <div className="w-60 lg:w-64 h-full flex flex-col overflow-hidden">
+      <div className="w-64 h-full flex flex-col overflow-hidden">
         {/* Aylantiriladigan ro'yxat (Scrollable Navigation) */}
         <div className="flex-1 overflow-y-auto px-3 py-3 space-y-1 text-sm select-none scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-zinc-800">
           {/* ================= 1-BO'LIM: ASOSIY ================= */}
@@ -266,7 +266,7 @@ export const Sidebar = ({
         </div>
 
         {/* ================= PASTKI QISM: FOOTER ================= */}
-        <div className="p-4 shrink-0 border-t border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        <div className="p-4 shrink-0 border-t border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 mt-auto">
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs font-medium text-gray-500 dark:text-zinc-400 mb-2">
             <a href="#about" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Haqida</a>
             <span>•</span>

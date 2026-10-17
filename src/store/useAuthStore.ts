@@ -7,6 +7,7 @@ export interface User {
   phone: string
   role: string
   avatar?: string
+  coins?: number
   purchasedCourses?: string[]
   purchasedLessons?: string[]
 }
@@ -23,6 +24,7 @@ interface AuthState {
   setAuthMode: (mode: 'login' | 'register') => void
   setAuth: (accessToken: string, user: User) => void
   setAccessToken: (accessToken: string | null) => void
+  setCoins: (coins: number) => void
   checkAuth: () => Promise<void>
   logout: () => Promise<void>
   updateProfile: (payload: UpdateProfilePayload) => Promise<UpdateProfileResponse>
@@ -67,6 +69,15 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.removeItem('token')
     }
     set({ accessToken, isAuthenticated: !!accessToken })
+  },
+
+  setCoins: (coins: number) => {
+    set((state) => {
+      if (!state.user) return state
+      const updatedUser = { ...state.user, coins }
+      localStorage.setItem('user', JSON.stringify(updatedUser))
+      return { user: updatedUser }
+    })
   },
 
   // Sahifa yangilanganda Cookie (refreshToken) orqali sessiyani tekshirish va tiklash

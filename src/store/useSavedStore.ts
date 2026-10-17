@@ -117,3 +117,129 @@ export const useSavedStore = create<SavedStoreState>()(
     }
   )
 )
+
+export interface HistoryStoreState {
+  history: import('../types').HistoryItem[]
+  isHistoryPaused: boolean
+  addToHistory: (item: Omit<import('../types').HistoryItem, 'watchedAt'> & { watchedAt?: string }) => void
+  removeFromHistory: (id: string | number) => void
+  clearHistory: () => void
+  togglePauseHistory: () => void
+  seedHistoryIfEmpty: (playlists: CoursePlaylist[]) => void
+}
+
+export const useHistoryStore = create<HistoryStoreState>()(
+  persist(
+    (set, get) => ({
+      history: [],
+      isHistoryPaused: false,
+
+      addToHistory: (item) => {
+        if (get().isHistoryPaused) return
+
+        const currentHistory = get().history
+        const existingIndex = currentHistory.findIndex(
+          (h) => String(h.playlistId) === String(item.playlistId)
+        )
+
+        const newItem: import('../types').HistoryItem = {
+          ...item,
+          id: item.id || `hist-${Date.now()}-${item.playlistId}`,
+          watchedAt: item.watchedAt || new Date().toISOString(),
+          progress: Math.min(100, Math.max(0, item.progress ?? 15)),
+        }
+
+        let updated: import('../types').HistoryItem[]
+        if (existingIndex !== -1) {
+          const copy = [...currentHistory]
+          copy.splice(existingIndex, 1)
+          updated = [newItem, ...copy]
+        } else {
+          updated = [newItem, ...currentHistory]
+        }
+
+        set({ history: updated })
+      },
+
+      removeFromHistory: (id: string | number) => {
+        set((state) => ({
+          history: state.history.filter((item) => String(item.id) !== String(id)),
+        }))
+      },
+
+      clearHistory: () => {
+        set({ history: [] })
+      },
+
+      togglePauseHistory: () => {
+        set((state) => ({ isHistoryPaused: !state.isHistoryPaused }))
+      },
+
+      seedHistoryIfEmpty: (playlists: CoursePlaylist[]) => {
+        const state = get()
+        if (state.history.length > 0 || !playlists || playlists.length === 0) return
+
+        const now = Date.now()
+        const oneHour = 3600 * 1000
+        const oneDay = 24 * oneHour
+
+        const mockHistory: import('../types').HistoryItem[] = playlists.slice(0, 8).map((playlist, idx) => {
+          let timeOffset: number
+          let progressVal: number
+
+          if (idx === 0) {
+            timeOffset = 25 * 60 * 1000 // 25 min oldin
+            progressVal = 72
+          } else if (idx === 1) {
+            timeOffset = 2 * oneHour // 2 soat oldin
+            progressVal = 45
+          } else if (idx === 2) {
+            timeOffset = 5 * oneHour // 5 soat oldin
+            progressVal = 90
+          } else if (idx === 3) {
+            timeOffset = oneDay + 3 * oneHour // Kecha
+            progressVal = 30
+          } else if (idx === 4) {
+            timeOffset = oneDay + 7 * oneHour // Kecha
+            progressVal = 100
+          } else if (idx === 5) {
+            timeOffset = 3 * oneDay // Ushbu hafta
+            progressVal = 60
+          } else if (idx === 6) {
+            timeOffset = 5 * oneDay // Ushbu hafta
+            progressVal = 20
+          } else {
+            timeOffset = 9 * oneDay // Avvalroq
+            progressVal = 85
+          }
+
+          const watchedDate = new Date(now - timeOffset).toISOString()
+          const totalDurations = ['18:40', '32:15', '45:00', '12:30', '1:05:20', '28:10', '52:45', '24:00']
+
+          return {
+            id: `seed-${playlist.id}-${idx}`,
+            playlistId: playlist.id,
+            title: playlist.title,
+            thumbnail: playlist.thumbnail,
+            channelTitle: playlist.channel?.name || 'Muallif',
+            channelAvatar: playlist.channel?.avatar,
+            channelVerified: playlist.channel?.verified,
+            price: playlist.price,
+            coins: playlist.rawPrice ? Math.round(playlist.rawPrice / 1000) : undefined,
+            watchedAt: watchedDate,
+            progress: progressVal,
+            duration: totalDurations[idx % totalDurations.length],
+            totalLessons: playlist.videoCount || playlist.videos?.length || 1,
+            category: playlist.category || 'Dasturlash',
+            rawPlaylist: playlist,
+          }
+        })
+
+        set({ history: mockHistory })
+      },
+    }),
+    {
+      name: 'c2c_watch_history_v1',
+    }
+  )
+)

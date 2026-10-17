@@ -4,10 +4,12 @@ import {
   CheckCircle2,
   Star,
   Bookmark,
+  Coins,
 } from 'lucide-react'
 import type { CoursePlaylist } from '../../types'
 import { useSavedStore } from '../../store/useSavedStore'
 import { useToastStore } from '../../store/useToastStore'
+import { useSettingsStore } from '../../store/useSettingsStore'
 
 interface CourseCardProps {
   video: CoursePlaylist
@@ -20,6 +22,7 @@ export const VideoCard = React.memo(({ video, onSelect }: CourseCardProps) => {
   )
   const toggleSavePlaylist = useSavedStore((state) => state.toggleSavePlaylist)
   const showToast = useToastStore((state) => state.showToast)
+  const calculateCoins = useSettingsStore((state) => state.calculateCoins)
 
   const handleToggleSave = useCallback(
     (e: React.MouseEvent) => {
@@ -29,6 +32,12 @@ export const VideoCard = React.memo(({ video, onSelect }: CourseCardProps) => {
     },
     [video, toggleSavePlaylist, showToast]
   )
+
+  const coursePrice =
+    video.authorPrice !== undefined && video.authorPrice !== null
+      ? video.authorPrice
+      : (video.rawPrice || 0)
+  const courseCoins = calculateCoins(coursePrice)
 
   return (
     <div
@@ -102,6 +111,20 @@ export const VideoCard = React.memo(({ video, onSelect }: CourseCardProps) => {
                 <span className="flex items-center gap-0.5 text-amber-500 font-bold ml-auto shrink-0">
                   <Star className="w-3 h-3 fill-amber-400" />
                   {video.channel.rating}
+                </span>
+              )}
+            </div>
+
+            {/* Kurs narxi (Faqat coin yoki Bepul) */}
+            <div className="flex items-center justify-between pt-2 mt-1 border-t border-gray-100 dark:border-zinc-800/80 text-xs">
+              {courseCoins > 0 ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 font-bold text-xs shadow-xs">
+                  <Coins className="w-3.5 h-3.5 text-amber-500" />
+                  <span>{courseCoins.toLocaleString()} coin</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold text-xs">
+                  Bepul
                 </span>
               )}
             </div>
