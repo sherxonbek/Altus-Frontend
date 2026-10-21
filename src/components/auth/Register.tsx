@@ -26,7 +26,6 @@ export const Register = () => {
   const [currentStep, setCurrentStep] = useState<Step>('PHONE')
   const [phoneState, setPhoneState] = useState('')
   const [serverError, setServerError] = useState<string | null>(null)
-  const [receivedTestCode, setReceivedTestCode] = useState<string | null>(null)
 
   // TanStack Query mutatsiyalari
   const sendOtpMutation = useSendOtpMutation()
@@ -78,11 +77,8 @@ export const Register = () => {
     const cleanNumbers = data.phone.replace(/\D/g, '')
 
     try {
-      const res = await sendOtpMutation.mutateAsync({ phone: cleanNumbers })
+      await sendOtpMutation.mutateAsync({ phone: cleanNumbers })
       setPhoneState(data.phone)
-      if (res.testCode) {
-        setReceivedTestCode(res.testCode)
-      }
       setCurrentStep('OTP')
     } catch (err: any) {
       phoneForm.setError('phone', {
@@ -274,11 +270,6 @@ export const Register = () => {
               <p className="mt-0.5">
                 Tasdiqlash kodi Telegram ilovangizdagi rasmiy <strong>Verification Codes</strong> chatiga yuborildi.
               </p>
-              {receivedTestCode && (
-                <p className="mt-1 text-sky-600 dark:text-sky-400 font-mono">
-                  (Test kodi: <strong>{receivedTestCode}</strong>)
-                </p>
-              )}
             </div>
           </div>
 
@@ -325,22 +316,6 @@ export const Register = () => {
               <span>Tasdiqlash</span>
             )}
           </button>
-
-          {receivedTestCode && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => {
-                  otpForm.setValue('otp', receivedTestCode, {
-                    shouldValidate: true,
-                  })
-                }}
-                className="text-xs text-gray-500 hover:text-indigo-600 transition-colors"
-              >
-                Kodni avtomatik to'ldirish
-              </button>
-            </div>
-          )}
         </form>
       )}
 
@@ -583,7 +558,6 @@ export const Register = () => {
               detailsForm.reset()
               setPhoneState('')
               setServerError(null)
-              setReceivedTestCode(null)
               setCurrentStep('PHONE')
             }}
             className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-gray-800 dark:text-zinc-200 text-sm font-medium rounded-xl transition-all cursor-pointer"

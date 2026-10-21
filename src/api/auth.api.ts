@@ -8,7 +8,6 @@ export interface SendOtpResponse {
   success: boolean
   message: string
   phone: string
-  testCode?: string
 }
 
 export interface VerifyOtpPayload {
